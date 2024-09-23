@@ -1,7 +1,7 @@
 from packages import *
 from functions import *
 from interactive_functions import *
-
+from configurations import *
 rows_prior_summary = np.loadtxt('prior_summary.csv', delimiter=',',skiprows=1)
 
 #%matplotlib inline
@@ -113,7 +113,7 @@ Nsamp0 = widgets.IntSlider(
     min=0,
     max=10000,
     step=1,
-    description='number of posterior samples:',
+    description='number of posterior samples after removing burnins:',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -468,7 +468,9 @@ healpix0 = widgets.IntSlider(
 healpix= widgets.IntText(layout=widgets.Layout(width='25%'),flex='2')
 widgets.jslink((healpix0, 'value'), (healpix, 'value'))
 
-healpix_description=widgets.Label(value='healpix only used for velocity prior; not for geometric distance prior')
+healpix_description=widgets.Label(value='only used for velocity prior; not for geometric distance prior')
+
+# walker initialisation
 
 walker_init = widgets.Text(
     value='0.31, 0.35, 0.36, 0.37',
@@ -478,6 +480,21 @@ walker_init = widgets.Text(
     layout=widgets.Layout(flex='8')
 )
 
+# plotting range:
+
+plotting_range = widgets.FloatRangeSlider(
+    value=[0, 5],
+    min=0,
+    max=12,
+    step=0.01,
+    description='Plotting range:',
+    disabled=False,
+    continuous_update=False,
+    orientation='horizontal',
+    style = {'description_width': 'initial'},
+    layout=widgets.Layout(flex='8')
+
+)
 
 # display all widgets
 
@@ -505,6 +522,7 @@ display(widgets.HBox([rInit0,rInit],layout=hbox_layout))
 display(widgets.HBox([rStep0,rStep],layout=hbox_layout))
 display(Markdown(" "))
 display(Markdown("**Sampling settings only required for emcee when processing a single source:** "))
+display(Markdown("(when processing multiple sources: 4 walkers; initialisatzion: random value between 0.5 and 1.5 * 1/abs(parallax))"))
 display(walker_init)
 # display input data 
 display(Markdown(" "))
@@ -523,6 +541,11 @@ display(widgets.HBox([corr_w_mu_ra0,corr_w_mu_ra],layout=hbox_layout))
 display(widgets.HBox([corr_w_mu_dec0,corr_w_mu_dec],layout=hbox_layout))
 display(widgets.HBox([corr_mu_ra_dec0,corr_mu_ra_dec],layout=hbox_layout))
 display(widgets.HBox([healpix0,healpix,healpix_description],layout=hbox_layout))
+display(Markdown(" "))
+display(Markdown("**Plotting range when processing a single source:**"))
+display(Markdown('(when processing multiple sources, the range will be 0.2*min(kinegeo samples)-1.2*max(kinegeo samples))'))
+
+display(widgets.VBox([plotting_range],layout=hbox_layout))
 
 out = widgets.Output()
 
@@ -544,7 +567,7 @@ def submit(button):
                                       walker_init=np.array([float(x) for x in walker_init.value.split(', ')]).reshape(-1, 1) , 
                                       rInit=rInit.value, rStep=rStep.value, Nsamp=Nsamp.value, 
                                       thinfac=thinfac.value, Nburnin=Nburnin.value, n=n.value, 
-                                      filename_in = filename_in.value,filename_out = filename_out.value, rows_prior_summary=rows_prior_summary)
+                                      filename_in = filename_in.value,filename_out = filename_out.value, rows_prior_summary=rows_prior_summary, Nmax=Nmax, rplotlo = plotting_range.value[0], rplothi = plotting_range.value[1], probs = probs)
         
 # tie submit button to a function
 submit_button.on_click(submit)

@@ -4,7 +4,7 @@ from functions import *
 def single_sourceid(sampler ,seed, source_id, 
                     parallax, parallax_error, alpha, beta, rlen, 
                     mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
-                    walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n, rows_prior_summary): 
+                    walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n, rows_prior_summary, rplotlo, rplothi, probs): 
     
     np.random.seed(seed)
     
@@ -102,24 +102,26 @@ def single_sourceid(sampler ,seed, source_id,
             
             # Distance estimation
             
+            
             if sampler=='metropolis': 
-                
-                thinsel = np.flip(np.arange(Nsamp-1, 0, -thinfac))
                 
                 # geometric samples
                 
                 samp_geo = metrop(func=loggeopostdensity, thetaInit=rInit, Nburnin=Nburnin, Nsamp=Nsamp, sampleCov=rStep**2, 
                               parallax=parallax, parallaxVar=parallaxVar, alpha=alpha, beta=beta, rlen=rlen, seed=seed)
                 
-                rSamp_geo = samp_geo[thinsel,1]
-            
+                rSamp_geo = samp_geo[:,1]
+                rSamp_geo = rSamp_geo[::thinfac]
+                
                 # kinegeometric samples
                 
                 samp_kinegeo = metrop(func=logkinegeopostdensity, thetaInit=rInit, Nburnin=Nburnin, Nsamp=Nsamp, sampleCov=rStep**2, 
                                   parallax=parallax, parallaxVar=parallaxVar, propm=propm, Cov3=Cov3, Cov2=Cov2, 
                                   sfit=sfit, alpha=alpha, beta=beta, rlen=rlen, kfac=kfac, seed=seed)
                 
-                rSamp_kinegeo = samp_kinegeo[thinsel,1]
+                rSamp_kinegeo = samp_kinegeo[:,1]
+                rSamp_kinegeo = rSamp_kinegeo[::thinfac]
+                
                 
             if sampler == 'emcee': 
                 
@@ -131,8 +133,9 @@ def single_sourceid(sampler ,seed, source_id,
                                             log_prob_fn=loggeopostdensity, 
                                             args=[parallax, parallaxVar, alpha,beta,rlen])
                 sampler_geo.run_mcmc(walker_init, Nsamp+Nburnin)
-                samp_geo = sampler_geo.get_chain(flat=True, discard = Nburnin, thin=thinfac) 
+                samp_geo = sampler_geo.get_chain(flat=True, discard = Nburnin) 
                 rSamp_geo = samp_geo.flatten()
+                rSamp_geo = rSamp_geo[::thinfac]
                 
                 # kinegeometric samples
                 sampler_kinegeo = emcee.EnsembleSampler(nwalkers=Nwalker,
@@ -141,9 +144,9 @@ def single_sourceid(sampler ,seed, source_id,
                                                         args=[parallax, parallaxVar ,propm, Cov3, Cov2, sfit,alpha,beta,rlen, kfac])
                 
                 sampler_kinegeo.run_mcmc(walker_init,Nsamp+Nburnin)
-                samp_kinegeo = sampler_kinegeo.get_chain(flat=True,discard = Nburnin,thin=thinfac) 
+                samp_kinegeo = sampler_kinegeo.get_chain(flat=True,discard = Nburnin) 
                 rSamp_kinegeo = samp_kinegeo.flatten()
-            
+                rSamp_kinegeo = rSamp_kinegeo[::thinfac]
            
             
             # Velocity sampling: 
@@ -163,23 +166,21 @@ def single_sourceid(sampler ,seed, source_id,
             totVelsamp = np.array(totVelsamp)
             totMeanVel = np.array(totMeanVel)
             
-            rplotlo = 0.2*min(rSamp_kinegeo)
-            rplothi = 1.2*max(rSamp_kinegeo)
-            
             plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                          rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
-                         propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac) 
-            plot_results_velocity(totVelsamp=totVelsamp)
+                         propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
+            
+            plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
             
             print_summary_statistics(rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
-                                     totVelsamp=totVelsamp, totMeanVel=totMeanVel,n=n,thinfac=thinfac)
+                                     totVelsamp=totVelsamp, totMeanVel=totMeanVel,n=n,thinfac=thinfac,probs=probs)
             plt.show()
                 
                 
 def single_owndata(sampler,seed, source_id, 
                    parallax, parallax_error, alpha, beta, rlen, 
                    mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,         
-                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary):       
+                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary,rplotlo, rplothi, probs):       
     
     np.random.seed(seed)
     
@@ -223,7 +224,8 @@ def single_owndata(sampler,seed, source_id,
                       parallax=parallax, parallaxVar=parallaxVar, alpha=alpha, beta=beta, rlen=rlen, seed=seed)
         
         rSamp_geo = samp_geo[:,1]
-    
+        rSamp_geo = rSamp_geo[::thinfac]
+        
         # kinegeometric samples
         
         samp_kinegeo = metrop(func=logkinegeopostdensity, thetaInit=rInit, Nburnin=Nburnin, Nsamp=Nsamp, sampleCov=rStep**2, 
@@ -231,6 +233,7 @@ def single_owndata(sampler,seed, source_id,
                           sfit=sfit, alpha=alpha, beta=beta, rlen=rlen, kfac=kfac, seed=seed)
         
         rSamp_kinegeo = samp_kinegeo[:,1]
+        rSamp_kinegeo = rSamp_kinegeo[::thinfac]
         
     if sampler == 'emcee': 
         
@@ -242,8 +245,9 @@ def single_owndata(sampler,seed, source_id,
                                     log_prob_fn=loggeopostdensity, 
                                     args=[parallax, parallaxVar, alpha,beta,rlen])
         sampler_geo.run_mcmc(walker_init, Nsamp+Nburnin)
-        samp_geo = sampler_geo.get_chain(flat=True, discard = Nburnin, thin=thinfac) 
+        samp_geo = sampler_geo.get_chain(flat=True, discard = Nburnin) 
         rSamp_geo = samp_geo.flatten()
+        rSamp_geo = rSamp_geo[::thinfac]
         
         # kinegeometric samples
         sampler_kinegeo = emcee.EnsembleSampler(nwalkers=Nwalker,
@@ -252,8 +256,9 @@ def single_owndata(sampler,seed, source_id,
                                                 args=[parallax, parallaxVar ,propm, Cov3, Cov2, sfit,alpha,beta,rlen, kfac])
         
         sampler_kinegeo.run_mcmc(walker_init,Nsamp+Nburnin)
-        samp_kinegeo = sampler_kinegeo.get_chain(flat=True,discard = Nburnin,thin=thinfac) 
+        samp_kinegeo = sampler_kinegeo.get_chain(flat=True,discard = Nburnin) 
         rSamp_kinegeo = samp_kinegeo.flatten()
+        rSamp_kinegeo = rSamp_kinegeo[::thinfac]
     
     # Velocity sampling: 
             
@@ -270,26 +275,19 @@ def single_owndata(sampler,seed, source_id,
         totMeanVel.append(meanVel)
     totVelsamp = np.array(totVelsamp)
     totMeanVel = np.array(totMeanVel)
-    
-    rplotlo = 0.2*min(rSamp_kinegeo)
-    rplothi = 1.2*max(rSamp_kinegeo)
-    
-    
-    rplotlo = 0.2*min(rSamp_kinegeo)
-    rplothi = 1.2*max(rSamp_kinegeo)
-    
+      
     plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                  rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
-                 propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac) 
-    plot_results_velocity(totVelsamp=totVelsamp)
+                 propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
+    plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
     
     print_summary_statistics(rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo, 
-                             totVelsamp=totVelsamp, totMeanVel=totMeanVel, n=n,thinfac=thinfac)
+                             totVelsamp=totVelsamp, totMeanVel=totMeanVel, n=n,thinfac=thinfac,probs=probs)
     
     plt.show()
     
 
-def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,seed,rows_prior_summary): 
+def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,seed,rows_prior_summary,Nmax,probs): 
     
     #read in comparison data to obtain array containing source_ids 
     
@@ -310,12 +308,15 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
     
     print('Number of sources found on GACS: ', len(r))
     
+    if len(r) > Nmax: 
+        print(f"\033[93m Warning: processing more than {Nmax} sources.\033[0m")
+        
     # samples for each source: 
     
     rSamples_kinegeo = []
     rSamples_geo = []
     
-    probs = np.array([0.5,0.1586553, 0.8413447])
+    
     
     # distance statistics for each source
     
@@ -338,7 +339,11 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
 
     totVelsamp_all = []
 
+    # plots for each source: 
     
+    plots_dist = []
+    plots_vel = []
+        
     for i in range(len(source_ids[:])): 
     
         w = float(r['parallax'][i])
@@ -422,41 +427,51 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
         # Uses metropolis algorithm from metropolis.py
         
             #kinegeometric samples
-            thinsel = np.flip(np.arange(Nsamp-1, 0, -thinfac)) # thinning iterations to retain
+            
             samp_kinegeo = metrop(func=logkinegeopostdensity ,thetaInit= rInit ,Nburnin=Nburnin ,Nsamp=Nsamp,
                                   sampleCov=rStep**2 ,parallax=parallax, seed=seed,parallaxVar = parallaxVar,propm=propm, Cov3=Cov3,
                                   Cov2=Cov2, sfit=sfit, alpha=alpha,beta=beta,rlen=rlen,kfac=kfac)
-            rSamp_kinegeo = samp_kinegeo[thinsel,1]
+            rSamp_kinegeo = samp_kinegeo[:,1]
+            rSamp_kinegeo = rSamp_kinegeo[::thinfac]
+            
             rSamples_kinegeo.append(rSamp_kinegeo)
             
             #geometric samples
             samp_geo = metrop(func=loggeopostdensity ,thetaInit= rInit ,Nburnin=Nburnin ,Nsamp=Nsamp,sampleCov=rStep**2 ,seed=seed,
                               parallax=parallax, parallaxVar = parallaxVar,alpha=alpha,beta=beta,rlen=rlen)
             rSamp_geo = samp_geo[thinsel,1]
+            rSamp_geo = rSamp_geo[::thinfac]
             rSamples_geo.append(rSamp_geo)
         
         if sampler == 'emcee': 
             
-            # initialisatzion: random value between 0.5 and 1.5 * mode of geometric EDSD (exponentially decreasing space density) posterior
+            # 4 walkers; initialisatzion: random value between 0.5 and 1.5 * rInit
             nwalkers = 4
             walker_init = np.random.uniform(low=0.5*rInit, high=1.5*rInit, size=(nwalkers,1)) 
             
-            #geometric samples
-            
-            sampler_geo = emcee.EnsembleSampler(nwalkers, ndim, loggeopostdensity, args=[parallax, parallaxVar, alpha,beta,rlen])
-            state_geo = sampler_geo.run_mcmc(walker_init), Nsamp+Nburnin
-            samp_geo = sampler_geo.get_chain(flat=True, discard=Nburnin, thin=thinfac)
+            # geometric samples
+        
+            Nwalker = len(walker_init)
+            sampler_geo = emcee.EnsembleSampler(nwalkers=Nwalker, 
+                                        ndim=1, 
+                                        log_prob_fn=loggeopostdensity, 
+                                        args=[parallax, parallaxVar, alpha,beta,rlen])
+            sampler_geo.run_mcmc(walker_init, Nsamp+Nburnin)
+            samp_geo = sampler_geo.get_chain(flat=True, discard = Nburnin) 
             rSamp_geo = samp_geo.flatten()
-            rSamples_geo.append(rSamp_geo)
+            rSamp_geo = rSamp_geo[::thinfac]
             
             # kinegeometric samples
+            sampler_kinegeo = emcee.EnsembleSampler(nwalkers=Nwalker,
+                                                    ndim=1,
+                                                    log_prob_fn=logkinegeopostdensity,
+                                                    args=[parallax, parallaxVar ,propm, Cov3, Cov2, sfit,alpha,beta,rlen, kfac])
             
-            sampler_kinegeo = emcee.EnsembleSampler(nwalkers, ndim, logkinegeopostdensity, args=[parallax, parallaxVar ,propm, Cov3, Cov2,
-                                                                                                 healpix,alpha,beta,rlen, kfac])
-            state_kinegeo = sampler_kinegeo.run_mcmc(walker_init, Nsamp+Nburnin)
-            samp_kinegeo = sampler_kinegeo.get_chain(flat=True, discard=Nburnin, thin=thinfac) #,discard=Nburnin
+            sampler_kinegeo.run_mcmc(walker_init,Nsamp+Nburnin)
+            samp_kinegeo = sampler_kinegeo.get_chain(flat=True,discard = Nburnin) 
             rSamp_kinegeo = samp_kinegeo.flatten()
-            rSamples_kinegeo.append(rSamp_kinegeo)
+            rSamp_kinegeo = rSamp_kinegeo[::thinfac]
+            
             
         #compute distance statistics:
                  
@@ -532,7 +547,23 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
         np.savetxt(f'./results/{filename_out}_samples_kinegeo.csv', rSamples_kinegeo, delimiter=",")
         np.savetxt(f'./results/{filename_out}_samples_geo.csv', rSamples_geo, delimiter=",")
         
-            
+        # create plots to save in pdf file and append to the lists of plots for each source: 
+        
+        rplotlo = 0.2*min(rSamp_kinegeo)
+        rplothi = 1.2*max(rSamp_kinegeo)
+        
+        fig_dist = plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
+                                rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
+                                propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs)     
+        fig_dist.suptitle(f'Distance estimation of Gaia DR3 {source_id}')
+        
+        fig_vel = plot_results_velocity(totVelsamp=totVelsamp,probs=probs)    
+        
+        fig_vel.suptitle(f'Velocity estimation of Gaia DR3 {source_id}')
+        
+        plots_dist.append(fig_dist)
+        plots_vel.append(fig_vel)
+        
     # save all summary statistics to a csv file
 
     header = ['source_id',\
@@ -553,36 +584,61 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
                              decVel_all[i][0],decVel_all[i][1],decVel_all[i][2],\
                              Cov_rv_ra_all[i],Cov_rv_dec_all[i],corrVel_all[i][0,1]])  
             
+    # save all plots to a .pdf file:
+    
+    with PdfPages(f'./results/{filename_out}.pdf') as pdf:
+        
+        for i in range(len(plots_dist)):
+            pdf.savefig(plots_dist[i])
+            pdf.savefig(plots_vel[i])
+                        
 def interactive_velocity_function(data, sampler, seed, source_id,
                                   parallax, parallax_error, alpha, beta, rlen, 
                                   mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
                                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,
-                                  filename_in, filename_out,rows_prior_summary):
+                                  filename_in, filename_out,rows_prior_summary, Nmax, rplotlo, rplothi, probs):
+    if Nsamp < 0: 
+        
+        print("\033[91mError: number of posterior samples must not be negative.\033[0m")
+        
+    elif Nburnin < 0: 
+        
+        print("\033[91mError: number of burn-in samples must not be negative.\033[0m")
     
-    if data == 'single source, own data': 
+    elif thinfac =< 0: 
         
-        single_owndata(sampler=sampler,seed=seed, source_id=source_id,
-                       parallax=parallax, parallax_error=parallax_error, alpha=alpha, beta=beta, rlen=rlen,
-                       mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
-                       corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
-                       healpix=healpix,
-                       walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
-                       rows_prior_summary=rows_prior_summary)
-                           
+        print("\033[91mError: thinning factor must not be less or equal 0.\033[0m")
+   
+    elif n < 0: 
         
-    if data == 'single source, source_id': 
-        
-        single_sourceid(sampler=sampler,seed=seed, source_id=source_id,
-                        parallax=parallax, parallax_error=parallax_error, alpha=alpha, beta=beta, rlen=rlen,
-                        mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
-                        corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
-                        healpix=healpix,
-                        walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
-                        rows_prior_summary=rows_prior_summary)                           
-                                                           
-    if data =='multiple source_ids in .csv file':
-        
-        multiple_sorceid(filename_in=filename_in,filename_out=filename_out,sampler=sampler, Nsamp=Nsamp, Nburnin=Nburnin,
-                         thinfac=thinfac, n=n,seed=seed,
-                         rows_prior_summary=rows_prior_summary)
+        print("\033[91mError: Number of velocity samples drawn for each of the MCMC distance samples must nut be negative.\033[0m")
+    
+    else: 
+    
+        if data == 'single source, own data': 
+            
+            single_owndata(sampler=sampler,seed=seed, source_id=source_id,
+                           parallax=parallax, parallax_error=parallax_error, alpha=alpha, beta=beta, rlen=rlen,
+                           mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
+                           corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
+                           healpix=healpix,
+                           walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
+                           rows_prior_summary=rows_prior_summary, rplotlo=rplotlo, rplothi=rplothi, probs=probs)
+                               
+            
+        if data == 'single source, source_id': 
+            
+            single_sourceid(sampler=sampler,seed=seed, source_id=source_id,
+                            parallax=parallax, parallax_error=parallax_error, alpha=alpha, beta=beta, rlen=rlen,
+                            mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
+                            corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
+                            healpix=healpix,
+                            walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
+                            rows_prior_summary=rows_prior_summary,rplotlo=rplotlo, rplothi=rplothi, probs=probs)                           
+                                                               
+        if data =='multiple source_ids in .csv file':
+            
+            multiple_sorceid(filename_in=filename_in,filename_out=filename_out,sampler=sampler, Nsamp=Nsamp, Nburnin=Nburnin,
+                             thinfac=thinfac, n=n,seed=seed,
+                             rows_prior_summary=rows_prior_summary,Nmax=Nmax, probs=probs)
                 

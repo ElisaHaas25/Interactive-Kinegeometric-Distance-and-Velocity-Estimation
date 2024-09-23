@@ -118,16 +118,48 @@ def logkinegeopostdensity(dist, parallax, parallaxVar ,propm, Cov3, Cov2, sfit, 
                       -np.inf)
     return result
 
+# Other functions only required for velocity posterior
 
+def logvelpriordensity(vel, dist, sfit):
+    # Return log (base 10) density of the velocity prior [1/(km/s)^2] using 
+    # scipy.stats.multivariate_normal.logpdf
+    # Call velpriorparams(dist, healpix)
+    
+    meanTau, CovTau = velpriorparams(dist=dist, sfit=sfit)
+    N = mvn.pdf(x=vel,mean=meanTau,cov=CovTau)
+    
+    return np.log10(N)
+
+def velpostparams(dist, parallax, Cov2, Cov3, propm, sfit, kfac): 
+    # Return the mean (meanVel) [km/s] and covariance (CovVel) [km/s^2]
+    # of the velocity posterior 
+    
+    meanTau, CovTau = velpriorparams(dist=dist, sfit=sfit)
+    invCovTau = np.linalg.inv(CovTau)
+    
+    Sigma_mu_w = np.array([Cov3[1,0],Cov3[2,0]])
+    Sigma_w_w = Cov3[0,0]
+    
+    X_mu = Sigma_mu_w * Sigma_w_w**(-1) * (parallax - (1/dist))
+    mean2 = propm + X_mu
+    
+    A = np.linalg.inv(kfac**2 * dist**2 * Cov2)
+    
+    CovVel = np.linalg.inv(A + invCovTau)
+
+    meanVel = np.matmul(CovVel , np.matmul(A*kfac*dist, propm - X_mu )+np.matmul(invCovTau,meanTau))
+    
+    
+    return meanVel, CovVel
 
 def plot_results(rSamp_kinegeo,rSamp_geo,rplotlo,rplothi,parallax, parallaxVar,
-                 propm, Cov3, Cov2, sfit,alpha,beta,rlen, kfac):
+                 propm, Cov3, Cov2, sfit,alpha,beta,rlen, kfac, probs):
     
      # plot the results of the geometric and kinegeometric distance estimation                                                
 
     fig,ax = plt.subplots(3,1,figsize=(7,9), gridspec_kw={'height_ratios': [1,1,2]})
     
-    fig.suptitle('Distance estimation')
+    fig.suptitle(f'Distance estimation ')
     
     r_plot = np.linspace(rplotlo,rplothi,200)
     
@@ -167,7 +199,6 @@ def plot_results(rSamp_kinegeo,rSamp_geo,rplotlo,rplothi,parallax, parallaxVar,
     ax[2].grid()
     
     # compute quantiles
-    probs = np.array([0.5,0.1586553,0.8413447])
     rQuant_kinegeo = np.quantile(rSamp_kinegeo,probs)
     rest_kinegeo = rQuant_kinegeo[0]
     rlo_kinegeo = rQuant_kinegeo[1]
@@ -187,50 +218,54 @@ def plot_results(rSamp_kinegeo,rSamp_geo,rplotlo,rplothi,parallax, parallaxVar,
     ax[2].legend(fontsize=7)
     ax[0].legend(fontsize=7)
     fig.tight_layout()
+    
+    return fig
 
-# Other functions only required for velocity posterior
 
-def logvelpriordensity(vel, dist, sfit):
-    # Return log (base 10) density of the velocity prior [1/(km/s)^2] using 
-    # scipy.stats.multivariate_normal.logpdf
-    # Call velpriorparams(dist, healpix)
+def plot_results_velocity(totVelsamp, probs):
     
-    meanTau, CovTau = velpriorparams(dist=dist, sfit=sfit)
-    N = mvn.pdf(x=vel,mean=meanTau,cov=CovTau)
+    # plot results of velocity estimation: 
     
-    return np.log10(N)
+    fig, ax = plt.subplots(2,2)
+    fig.suptitle(f'Velocity estimation')
+    
+    # Get results: mean and quantiles of v_ra and v_dec + correlation between array of v_ra and v_dec samples
+    raVel = np.quantile(totVelsamp[:,0], probs)
+    decVel = np.quantile(totVelsamp[:,1], probs)
+    
+    ax[0,0].hist(totVelsamp[:,0],histtype='step',color='k',bins=25)
+    ax[0,0].sharex(ax[0,1])
+    ax[0,0].axvline(raVel[0],0,1,color='k')
+    ax[0,0].axvline(raVel[1],0,1,color='k',linestyle='--')
+    ax[0,0].axvline(raVel[2],0,1,color='k',linestyle='--')
+    
+    ax[0,1].axis('off')
+    ax[1,0].hist2d(totVelsamp[:,0], totVelsamp[:,1],cmap='Greys',bins=25)
+    #ax[1,0].scatter(totVelsamp[:,0],totVelsamp[:,1],color='k',s=2)
+    ax[1,0].set_xlabel('$v_{ra}$')
+    ax[1,0].set_ylabel('$v_{dec}$')
+    
+    
+    ax[1,1].hist(totVelsamp[:,1],orientation='horizontal', histtype='step',color='k',bins=25)
+    ax[1,1].sharey(ax[0,1])
+    ax[1,1].axhline(decVel[0],color='k')
+    ax[1,1].axhline(decVel[1],color='k',linestyle='--')
+    ax[1,1].axhline(decVel[2],color='k',linestyle='--')
+    
+    plt.setp(ax[0,0].get_xticklabels(), visible=False)
+    plt.setp(ax[1,1].get_yticklabels(), visible=False);
+    plt.tight_layout()
+    
+    return fig
 
-def velpostparams(dist, parallax, Cov2, Cov3, propm, sfit, kfac): 
-    # Return the mean (meanVel) [km/s] and covariance (CovVel) [km/s^2]
-    # of the velocity posterior 
-    
-    meanTau, CovTau = velpriorparams(dist=dist, sfit=sfit)
-    invCovTau = np.linalg.inv(CovTau)
-    
-    Sigma_mu_w = np.array([Cov3[1,0],Cov3[2,0]])
-    Sigma_w_w = Cov3[0,0]
-    
-    X_mu = Sigma_mu_w * Sigma_w_w**(-1) * (parallax - (1/dist))
-    mean2 = propm + X_mu
-    
-    A = np.linalg.inv(kfac**2 * dist**2 * Cov2)
-    
-    CovVel = np.linalg.inv(A + invCovTau)
 
-    meanVel = np.matmul(CovVel , np.matmul(A*kfac*dist, propm - X_mu )+np.matmul(invCovTau,meanTau))
-    
-    
-    return meanVel, CovVel 
-    
-    
 # function to print the summary statistics for kinegeometric and geometric samples    
     
-def print_summary_statistics(rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVelsamp, totMeanVel, n,thinfac): 
+def print_summary_statistics(rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVelsamp, totMeanVel, n,thinfac,probs): 
     
     # print distance estimation statistics: 
     
     # compute quantiles of distance
-    probs = np.array([0.5,0.1586553,0.8413447])
     rQuant_kinegeo = np.quantile(rSamp_kinegeo,probs)
     rest_kinegeo = rQuant_kinegeo[0]
     rlo_kinegeo = rQuant_kinegeo[1]
@@ -303,6 +338,7 @@ def print_summary_statistics(rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVel
 # function to print the data for a single source_id as input    
     
 def print_data_sourceid(source_id,healpix,w,sd_w,wzp,parallax,mu_ra,mu_dec,sd_mu_ra,sd_mu_dec,corr_w_mu_ra,corr_w_mu_dec,corr_mu_ra_dec,alpha,beta,rlen):
+    # print all the input data
     
     print('\033[1m' + f'Data for Gaia DR3 {source_id}: ' + '\033[0m')
     print('') 
@@ -324,42 +360,8 @@ def print_data_sourceid(source_id,healpix,w,sd_w,wzp,parallax,mu_ra,mu_dec,sd_mu
     print('proper motion ra-dec correlation: ',corr_mu_ra_dec)
     print('')
 
-# plot results of velocity estimation: 
 
-def plot_results_velocity(totVelsamp):
-    
-    fig, ax = plt.subplots(2,2)
-    fig.suptitle('Velocity estimation')
-    
-    probs = np.array([0.5,0.1586553,0.8413447])
-    # Get results: mean and quantiles of v_ra and v_dec + correlation between array of v_ra and v_dec samples
-    raVel = np.quantile(totVelsamp[:,0], probs)
-    decVel = np.quantile(totVelsamp[:,1], probs)
-    
-    ax[0,0].hist(totVelsamp[:,0],histtype='step',color='k',bins=25)
-    ax[0,0].sharex(ax[0,1])
-    ax[0,0].axvline(raVel[0],0,1,color='k')
-    ax[0,0].axvline(raVel[1],0,1,color='k',linestyle='--')
-    ax[0,0].axvline(raVel[2],0,1,color='k',linestyle='--')
-    
-    ax[0,1].axis('off')
-    ax[1,0].hist2d(totVelsamp[:,0], totVelsamp[:,1],cmap='Greys',bins=25)
-    #ax[1,0].scatter(totVelsamp[:,0],totVelsamp[:,1],color='k',s=2)
-    ax[1,0].set_xlabel('$v_{ra}$')
-    ax[1,0].set_ylabel('$v_{dec}$')
-    
-    
-    ax[1,1].hist(totVelsamp[:,1],orientation='horizontal', histtype='step',color='k',bins=25)
-    ax[1,1].sharey(ax[0,1])
-    ax[1,1].axhline(decVel[0],color='k')
-    ax[1,1].axhline(decVel[1],color='k',linestyle='--')
-    ax[1,1].axhline(decVel[2],color='k',linestyle='--')
-    
-    plt.setp(ax[0,0].get_xticklabels(), visible=False)
-    plt.setp(ax[1,1].get_yticklabels(), visible=False);
-    plt.tight_layout()
-    
-    
+
     
 # function that resolves a simbad name. If the name does not exist or there is no corresponding source_id, an error-string is returned. Only the source_id returned as string without the 'Gaia DR3' in front of it. The function at the top helps to find the Gaia DR3 name in the list of names from Simbad.
 
