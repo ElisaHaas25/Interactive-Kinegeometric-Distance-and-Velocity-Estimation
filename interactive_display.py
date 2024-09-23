@@ -496,6 +496,14 @@ plotting_range = widgets.FloatRangeSlider(
 
 )
 
+create_pdf = widgets.Checkbox(
+    value=False,
+    description='Create .pdf file containing plots for all sources',
+    disabled=False,
+    style = {'description_width': 'initial'},
+    layout=widgets.Layout(flex='8')
+)
+
 # display all widgets
 
 display(sampler)
@@ -504,6 +512,7 @@ display(data)
 display(widgets.HBox([source_id, description_text]))
 display(filename_in)
 display(filename_out)
+display(create_pdf)
 display(seed)
 display(Markdown(" "))
 display(Markdown("**General sampling settings:** "))
@@ -560,14 +569,18 @@ def submit(button):
     out.clear_output()
     with out:
         interactive_velocity_function(data = data.value, sampler=sampler.value, seed=seed.value, source_id = source_id.value, 
-                                      parallax=parallax.value, parallax_error=parallax_error.value, alpha=alpha.value, beta=beta.value, rlen=rlen.value, 
+                                      parallax=parallax.value, parallax_error=parallax_error.value, 
+                                      alpha=alpha.value, beta=beta.value, rlen=rlen.value, 
                                       mu_ra=mu_ra.value, mu_dec=mu_dec.value, sd_mu_ra=sd_mu_ra.value, sd_mu_dec=sd_mu_dec.value, 
-                                      corr_w_mu_ra= corr_w_mu_ra.value, corr_w_mu_dec=corr_w_mu_dec.value, corr_mu_ra_dec=corr_mu_ra_dec.value, 
+                                      corr_w_mu_ra= corr_w_mu_ra.value, corr_w_mu_dec=corr_w_mu_dec.value,
+                                      corr_mu_ra_dec=corr_mu_ra_dec.value, 
                                       healpix=int(healpix.value),
                                       walker_init=np.array([float(x) for x in walker_init.value.split(', ')]).reshape(-1, 1) , 
                                       rInit=rInit.value, rStep=rStep.value, Nsamp=Nsamp.value, 
                                       thinfac=thinfac.value, Nburnin=Nburnin.value, n=n.value, 
-                                      filename_in = filename_in.value,filename_out = filename_out.value, rows_prior_summary=rows_prior_summary, Nmax=Nmax, rplotlo = plotting_range.value[0], rplothi = plotting_range.value[1], probs = probs)
+                                      filename_in = filename_in.value,filename_out = filename_out.value, create_pdf = create_pdf.value,
+                                      rows_prior_summary=rows_prior_summary, Nmax=Nmax, 
+                                      rplotlo = plotting_range.value[0], rplothi = plotting_range.value[1], probs = probs)
         
 # tie submit button to a function
 submit_button.on_click(submit)

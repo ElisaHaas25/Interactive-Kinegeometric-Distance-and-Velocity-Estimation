@@ -287,7 +287,7 @@ def single_owndata(sampler,seed, source_id,
     plt.show()
     
 
-def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,seed,rows_prior_summary,Nmax,probs): 
+def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp, Nburnin,thinfac,n,seed,rows_prior_summary,Nmax,probs): 
     
     #read in comparison data to obtain array containing source_ids 
     
@@ -439,7 +439,7 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
             #geometric samples
             samp_geo = metrop(func=loggeopostdensity ,thetaInit= rInit ,Nburnin=Nburnin ,Nsamp=Nsamp,sampleCov=rStep**2 ,seed=seed,
                               parallax=parallax, parallaxVar = parallaxVar,alpha=alpha,beta=beta,rlen=rlen)
-            rSamp_geo = samp_geo[thinsel,1]
+            rSamp_geo = samp_geo[:,1]
             rSamp_geo = rSamp_geo[::thinfac]
             rSamples_geo.append(rSamp_geo)
         
@@ -549,20 +549,22 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
         
         # create plots to save in pdf file and append to the lists of plots for each source: 
         
-        rplotlo = 0.2*min(rSamp_kinegeo)
-        rplothi = 1.2*max(rSamp_kinegeo)
-        
-        fig_dist = plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
-                                rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
-                                propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs)     
-        fig_dist.suptitle(f'Distance estimation of Gaia DR3 {source_id}')
-        
-        fig_vel = plot_results_velocity(totVelsamp=totVelsamp,probs=probs)    
-        
-        fig_vel.suptitle(f'Velocity estimation of Gaia DR3 {source_id}')
-        
-        plots_dist.append(fig_dist)
-        plots_vel.append(fig_vel)
+        if create_pdf == True:
+            
+            rplotlo = 0.2*min(rSamp_kinegeo)
+            rplothi = 1.2*max(rSamp_kinegeo)
+            
+            fig_dist = plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
+                                    rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
+                                    propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs)     
+            fig_dist.suptitle(f'Distance estimation of Gaia DR3 {source_id}')
+            
+            fig_vel = plot_results_velocity(totVelsamp=totVelsamp,probs=probs)    
+            
+            fig_vel.suptitle(f'Velocity estimation of Gaia DR3 {source_id}')
+            
+            plots_dist.append(fig_dist)
+            plots_vel.append(fig_vel)
         
     # save all summary statistics to a csv file
 
@@ -586,17 +588,19 @@ def multiple_sorceid(filename_in,filename_out,sampler, Nsamp, Nburnin,thinfac,n,
             
     # save all plots to a .pdf file:
     
-    with PdfPages(f'./results/{filename_out}.pdf') as pdf:
-        
-        for i in range(len(plots_dist)):
-            pdf.savefig(plots_dist[i])
-            pdf.savefig(plots_vel[i])
+    if create_pdf == True:
+    
+        with PdfPages(f'./results/{filename_out}.pdf') as pdf:
+            
+            for i in range(len(plots_dist)):
+                pdf.savefig(plots_dist[i])
+                pdf.savefig(plots_vel[i])
                         
 def interactive_velocity_function(data, sampler, seed, source_id,
                                   parallax, parallax_error, alpha, beta, rlen, 
                                   mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
                                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,
-                                  filename_in, filename_out,rows_prior_summary, Nmax, rplotlo, rplothi, probs):
+                                  filename_in, filename_out, create_pdf, rows_prior_summary, Nmax, rplotlo, rplothi, probs):
     if Nsamp < 0: 
         
         print("\033[91mError: number of posterior samples must not be negative.\033[0m")
@@ -605,7 +609,7 @@ def interactive_velocity_function(data, sampler, seed, source_id,
         
         print("\033[91mError: number of burn-in samples must not be negative.\033[0m")
     
-    elif thinfac =< 0: 
+    elif thinfac <= 0: 
         
         print("\033[91mError: thinning factor must not be less or equal 0.\033[0m")
    
@@ -638,7 +642,8 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                                                                
         if data =='multiple source_ids in .csv file':
             
-            multiple_sorceid(filename_in=filename_in,filename_out=filename_out,sampler=sampler, Nsamp=Nsamp, Nburnin=Nburnin,
+            multiple_sorceid(filename_in=filename_in,filename_out=filename_out,create_pdf=create_pdf,
+                             sampler=sampler, Nsamp=Nsamp, Nburnin=Nburnin,
                              thinfac=thinfac, n=n,seed=seed,
                              rows_prior_summary=rows_prior_summary,Nmax=Nmax, probs=probs)
                 
