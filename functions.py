@@ -12,13 +12,8 @@ kfac = 4.740471 # vel[km/s] = kfac * r[kpc] * propm[mas/yr]
 def velpriorparams(dist,sfit):
     # Return the mean (meanTau) [1/(km/s)] and covariance (CovTau) [1/(km/s)^2]
     # of the velocity prior 
-    
-    # Returns the mean (meanTau) [1/(km/s)] and covariance (CovTau) [1/(km/s)^2]
-    # of the velocity prior: 
     vramean_tau, vrasd_tau, vdecmean_tau, vdecsd_tau, cor_tau = robjects.r['eval.sfit'](sfit=sfit, r=dist*1e3) # output is in km/s, takes input in pc
     
-    
-
     meanTau = np.array([vramean_tau,vdecmean_tau])
     CovTau = np.array([[vrasd_tau**2 ,vrasd_tau * vdecsd_tau *cor_tau], 
                        [vrasd_tau*vdecsd_tau*cor_tau,vdecsd_tau**2]])
@@ -27,13 +22,7 @@ def velpriorparams(dist,sfit):
 
 def logdistpriordensity(dist, alpha,beta,rlen):
     # Return log (base 10) of the unnormalized distance prior [1/kpc]
-    
-    # convert rlen from pc to kpc 
-    #rlen = rlen*1e-3
-
-    #dist = np.where(dist > 0,dist,0)
-    #prior = 1/(gamma((beta+1)/alpha)) * alpha/(rlen**(beta+1)) * dist**beta * np.exp(-((dist/rlen)**alpha))
-    #logPrior = np.log10(prior)
+    dist = np.where(dist>0,dist,np.nan)
     logPrior = -loggamma((beta+1)/alpha) + np.log(alpha) - (beta+1)*np.log(rlen) + beta*np.log(dist) - (dist/rlen)**alpha
     
     return 0.4342945*logPrior
@@ -42,7 +31,7 @@ def logparallaxlikelihood(dist, parallax, parallaxVar):
     # Return log (base 10) of the (normalized) likelhood of the parallax at this distance.
     # parallaxVar is the relevant element of the Cov3 matrix.
     # This is a simple 1D Gaussian density.
-    #return 0.4342945* mvn.logpdf(parallax,mean=1/dist,cov=parallaxVar)
+    
     return( 0.4342945*norm.logpdf(parallax,loc=1/dist,scale=np.sqrt(parallaxVar)) )
     
 def loggeopostdensity(dist, parallax, parallaxVar, alpha,beta,rlen):
@@ -50,9 +39,6 @@ def loggeopostdensity(dist, parallax, parallaxVar, alpha,beta,rlen):
     # posterior [1/kpc]  
     # logparallaxlikelihood + logdistpriordensity
     
-    #result = logparallaxlikelihood(dist=dist, parallax=parallax, parallaxVar=parallaxVar)\
-    #+ logdistpriordensity(dist=dist,alpha=alpha,beta=beta,rlen=rlen)
-
     result = np.where(dist > 0, logparallaxlikelihood(dist=dist, parallax=parallax, 
                                                       parallaxVar=parallaxVar) + 
                        logdistpriordensity(dist=dist,alpha=alpha,beta=beta,rlen=rlen), -np.inf)
@@ -91,17 +77,17 @@ def logQfunc(dist, parallax, propm, Cov3, Cov2, kfac, meanTau, CovTau):
     # Compute logdensity of Q using scipy.stats.multivariate_normal.logpdf
     # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html
     # - don't forget to multiply by kfac*dist to get Q.
-     
+    
     Sigma_mu_w = np.array([Cov3[1,0],Cov3[2,0]])
     Sigma_w_w = Cov3[0,0]
     
-    X_mu = Sigma_mu_w * Sigma_w_w**(-1) * (parallax-1/dist)
+    if dist > 0: 
+        X_mu = Sigma_mu_w * Sigma_w_w**(-1) * (parallax-1/dist)
+        logN = 0.4342945* mvn.logpdf(x=meanTau,mean=kfac*dist*(propm-X_mu),cov=kfac**2 * dist**2 * Cov2 + CovTau)
+        return np.log10(kfac*dist) + logN
+    else: 
+        return -np.inf
     
-    
-    
-    logN = 0.4342945* mvn.logpdf(x=meanTau,mean=kfac*dist*(propm-X_mu),cov=kfac**2 * dist**2 * Cov2 + CovTau)
-    
-    return np.log10(kfac*dist) + logN
     
 def logkinegeopostdensity(dist, parallax, parallaxVar ,propm, Cov3, Cov2, sfit, alpha,beta,rlen, kfac):
     # Return the log (base 10) of the (unnormalized) density of the kinegeometric 
@@ -387,3 +373,64 @@ def resolve_simbad_to_gaia(simbad_name):
 
     else:
         return f'Error: {simbad_name} not found in Simbad!'
+
+# Returns the mode of the EDSD posterior or nan if the inputs are other than defined below. 
+# retall=True : return all roots of the derivative of the EDSD posterior sorted in increasing order of real part
+# 
+# Inputs:
+# w    - parallax,             unrestricted
+# wsd  - parallax uncertainty, must be >0
+# rlen - prior length scale,   must be >0 and <Inf
+
+#retall=False (default): return the mode of the EDSD posterior. This is selected as follows:
+
+# There are two types of solutions of the cubic equation: 
+# 1. only one root is real => one maxima. Take this as the mode.
+# 2. all three roots are real => two maxima
+#    if w>=0, take the smallest.
+#    if w<0   take the positive one (there should be only one).
+# The other two possibilities, 0 or 2 real roots, should not occur.
+# If they do, return nan. 
+
+# This is later used to get the initial guess rInit
+    
+def mode_post3(w,wsd,rlen,retall = False):
+    # special cases:
+    # w<=0 works normally, except for w=-Inf
+    if np.isnan(np.array([w,wsd,rlen])).any(): 
+        return np.nan
+    if w == -np.inf:
+        return np.inf
+    if w == np.inf: 
+        return 0
+    if wsd == 0: 
+        return 1/w
+    if wsd == np.inf:
+        return 2*rlen
+    if wsd<0:
+        return np.nan
+    if rlen <=0:
+        return np.nan
+    
+    coeff = [1/rlen,-2,w/wsd**2,-1/wsd**2] 
+    roots = np.roots(coeff)    
+    
+    r = sum(np.isreal(roots)) # gives number of real modes
+    
+    if r == 0:
+        rMode = np.nan
+    if r == 1:
+        rMode = np.extract(np.isreal(roots),roots)
+    if r == 2: 
+        rMode = np.nan
+    if r == 3: 
+        rMode = np.extract(np.isreal(roots),roots)
+        if w>0:
+            rMode = min(roots)
+        else:
+            rMode = roots[roots>0]
+    
+    if retall is True:
+        return(roots)
+    else:
+        return(rMode.real)

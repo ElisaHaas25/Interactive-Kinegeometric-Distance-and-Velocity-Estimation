@@ -480,21 +480,23 @@ walker_init = widgets.Text(
     layout=widgets.Layout(flex='8')
 )
 
-# plotting range:
+## plotting range:
+#
+#plotting_range = widgets.FloatRangeSlider(
+#    value=[0, 5],
+#    min=0,
+#    max=12,
+#    step=0.01,
+#    description='Plotting range:',
+#    disabled=False,
+#    continuous_update=False,
+#    orientation='horizontal',
+#    style = {'description_width': 'initial'},
+#    layout=widgets.Layout(flex='8')
+#
+#)
 
-plotting_range = widgets.FloatRangeSlider(
-    value=[0, 5],
-    min=0,
-    max=12,
-    step=0.01,
-    description='Plotting range:',
-    disabled=False,
-    continuous_update=False,
-    orientation='horizontal',
-    style = {'description_width': 'initial'},
-    layout=widgets.Layout(flex='8')
-
-)
+#create pdf option
 
 create_pdf = widgets.Checkbox(
     value=False,
@@ -523,6 +525,7 @@ display(widgets.HBox([Nsamp0,Nsamp],layout=hbox_layout))
 display(widgets.HBox([Nburnin0,Nburnin],layout=hbox_layout))
 display(widgets.HBox([thinfac0,thinfac],layout=hbox_layout))
 display(widgets.HBox([n0,n],layout=hbox_layout))
+display(Markdown("(set to 1 if unsure what this is)"))
 
 display(Markdown(" "))
 display(Markdown("**Sampling settings only required for metropolis when processing a single source:**"))
@@ -551,10 +554,10 @@ display(widgets.HBox([corr_w_mu_dec0,corr_w_mu_dec],layout=hbox_layout))
 display(widgets.HBox([corr_mu_ra_dec0,corr_mu_ra_dec],layout=hbox_layout))
 display(widgets.HBox([healpix0,healpix,healpix_description],layout=hbox_layout))
 display(Markdown(" "))
-display(Markdown("**Plotting range when processing a single source:**"))
-display(Markdown('(when processing multiple sources, the range will be 0.2*min(kinegeo samples)-1.2*max(kinegeo samples))'))
 
-display(widgets.VBox([plotting_range],layout=hbox_layout))
+#display(Markdown("**Plotting range when processing a single source:**"))
+#display(Markdown('(when processing multiple sources, the range will be 0.2*min(kinegeo samples)-1.2*max(kinegeo samples))'))
+#display(widgets.VBox([plotting_range],layout=hbox_layout))
 
 out = widgets.Output()
 
@@ -579,8 +582,7 @@ def submit(button):
                                       rInit=rInit.value, rStep=rStep.value, Nsamp=Nsamp.value, 
                                       thinfac=thinfac.value, Nburnin=Nburnin.value, n=n.value, 
                                       filename_in = filename_in.value,filename_out = filename_out.value, create_pdf = create_pdf.value,
-                                      rows_prior_summary=rows_prior_summary, Nmax=Nmax, 
-                                      rplotlo = plotting_range.value[0], rplothi = plotting_range.value[1], probs = probs)
+                                      rows_prior_summary=rows_prior_summary, Nmax=Nmax, probs = probs)
         
 # tie submit button to a function
 submit_button.on_click(submit)

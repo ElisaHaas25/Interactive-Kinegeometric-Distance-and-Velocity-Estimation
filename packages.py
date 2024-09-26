@@ -31,7 +31,7 @@ from astroquery.simbad import Simbad
 #samplers 
 import emcee #https://emcee.readthedocs.io/en/stable/
 from metropolis import metrop
-#from functions import mode_post3 
+ 
 
 #for interactive display
 import ipywidgets as widgets

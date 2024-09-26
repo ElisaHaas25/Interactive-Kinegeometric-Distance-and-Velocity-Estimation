@@ -4,7 +4,7 @@ from functions import *
 def single_sourceid(sampler ,seed, source_id, 
                     parallax, parallax_error, alpha, beta, rlen, 
                     mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
-                    walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n, rows_prior_summary, rplotlo, rplothi, probs): 
+                    walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n, rows_prior_summary,probs): 
     
     np.random.seed(seed)
     
@@ -166,6 +166,11 @@ def single_sourceid(sampler ,seed, source_id,
             totVelsamp = np.array(totVelsamp)
             totMeanVel = np.array(totMeanVel)
             
+            #plot results
+            
+            rplotlo = min(np.percentile(rSamp_kinegeo,5),np.percentile(rSamp_geo,5))
+            rplothi = max(np.percentile(rSamp_kinegeo,95),np.percentile(rSamp_geo,95))
+            
             plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                          rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
                          propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
@@ -180,7 +185,7 @@ def single_sourceid(sampler ,seed, source_id,
 def single_owndata(sampler,seed, source_id, 
                    parallax, parallax_error, alpha, beta, rlen, 
                    mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,         
-                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary,rplotlo, rplothi, probs):       
+                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary, probs):       
     
     np.random.seed(seed)
     
@@ -276,6 +281,11 @@ def single_owndata(sampler,seed, source_id,
     totVelsamp = np.array(totVelsamp)
     totMeanVel = np.array(totMeanVel)
       
+   #display results 
+                
+    rplotlo = min(np.percentile(rSamp_kinegeo,5),np.percentile(rSamp_geo,5))
+    rplothi = max(np.percentile(rSamp_kinegeo,95),np.percentile(rSamp_geo,95))
+    
     plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                  rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
                  propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
@@ -400,10 +410,10 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp, Nburni
         
         alpha = float(rows_prior_summary[healpix][6])
         beta = float(rows_prior_summary[healpix][7])
-        rlen = float(rows_prior_summary[healpix][5])*1e-3
-        #rlen_EDSD = float(rows_prior_summary[healpix][10])
+        rlen = float(rows_prior_summary[healpix][5])*1e-3 # in kpc
+        rlen_EDSD = float(rows_prior_summary[healpix][10])  # in pc, since only reqired function for mode_post3, which takes pc
         
-        rInit = 1/abs(parallax)
+        rInit = float(mode_post3(w=1e-3*parallax,wsd=1e-3*sd_w,rlen = rlen_EDSD,retall = False))*1e-3 # in kpc
         rStep = 0.75*rInit*min(1/3, abs(sd_w/parallax))
         
         # load the velocity prior model (sfit) correspoding to the respective healpixel 
@@ -551,8 +561,11 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp, Nburni
         
         if create_pdf == True:
             
-            rplotlo = 0.2*min(rSamp_kinegeo)
-            rplothi = 1.2*max(rSamp_kinegeo)
+            rplotlo = min(np.percentile(rSamp_kinegeo,5),np.percentile(rSamp_geo,5))
+            rplothi = max(np.percentile(rSamp_kinegeo,95),np.percentile(rSamp_geo,95))
+
+            #rplotlo = 0.2*min(rSamp_kinegeo)
+            #rplothi = 1.2*max(rSamp_kinegeo)
             
             fig_dist = plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                                     rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
@@ -600,7 +613,7 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                                   parallax, parallax_error, alpha, beta, rlen, 
                                   mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
                                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,
-                                  filename_in, filename_out, create_pdf, rows_prior_summary, Nmax, rplotlo, rplothi, probs):
+                                  filename_in, filename_out, create_pdf, rows_prior_summary, Nmax, probs):
     if Nsamp < 0: 
         
         print("\033[91mError: number of posterior samples must not be negative.\033[0m")
@@ -627,7 +640,7 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                            corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
                            healpix=healpix,
                            walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
-                           rows_prior_summary=rows_prior_summary, rplotlo=rplotlo, rplothi=rplothi, probs=probs)
+                           rows_prior_summary=rows_prior_summary, probs=probs)
                                
             
         if data == 'single source, source_id': 
@@ -638,7 +651,7 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                             corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
                             healpix=healpix,
                             walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
-                            rows_prior_summary=rows_prior_summary,rplotlo=rplotlo, rplothi=rplothi, probs=probs)                           
+                            rows_prior_summary=rows_prior_summary, probs=probs)                           
                                                                
         if data =='multiple source_ids in .csv file':
             
