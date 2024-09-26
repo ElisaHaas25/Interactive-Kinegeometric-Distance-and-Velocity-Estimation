@@ -12,4 +12,4 @@ https://doi.org/10.3847/1538-3881/ad08bb
 For more details see: https://www.mpia.de/homes/calj/gedr3_distances_velocities.html
 The method implemented in the current notebook is slightly different, and is described here:
 https://www.mpia.de/homes/calj/gedr3_distances_velocities/distance_velocity_sampling_1d.pdf
-.ipynb notebook file
+
