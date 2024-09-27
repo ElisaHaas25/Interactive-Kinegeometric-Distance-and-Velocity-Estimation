@@ -608,6 +608,7 @@ display(widgets.HBox([corr_w_mu_dec0,corr_w_mu_dec],layout=hbox_layout))
 display(widgets.HBox([corr_mu_ra_dec0,corr_mu_ra_dec],layout=hbox_layout))
 display(widgets.HBox([healpix0,healpix,healpix_description],layout=hbox_layout))
 display(Markdown(" "))
+display(Markdown('Plotting range: extends from the smaller of the 5th percentiles of the geometric and kinegeometric distances, to the larger of the 95th percentiles of the geometric and kinegeometric distances'))
 
 #display(Markdown("**Plotting range when processing a single source:**"))
 #display(Markdown('(when processing multiple sources, the range will be 0.2*min(kinegeo samples)-1.2*max(kinegeo samples))'))
