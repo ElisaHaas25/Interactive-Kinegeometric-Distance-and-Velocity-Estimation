@@ -228,8 +228,8 @@ def plot_results_velocity(totVelsamp, probs):
     ax[0,1].axis('off')
     ax[1,0].hist2d(totVelsamp[:,0], totVelsamp[:,1],cmap='Greys',bins=25)
     #ax[1,0].scatter(totVelsamp[:,0],totVelsamp[:,1],color='k',s=2)
-    ax[1,0].set_xlabel('$v_{ra}$')
-    ax[1,0].set_ylabel('$v_{dec}$')
+    ax[1,0].set_xlabel('$v_{ra} [km/s]$')
+    ax[1,0].set_ylabel('$v_{dec} [km/s]$')
     
     
     ax[1,1].hist(totVelsamp[:,1],orientation='horizontal', histtype='step',color='k',bins=25)
@@ -247,7 +247,7 @@ def plot_results_velocity(totVelsamp, probs):
 
 # function to print the summary statistics for kinegeometric and geometric samples    
     
-def print_summary_statistics(rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVelsamp, totMeanVel, n,thinfac,probs): 
+def print_summary_statistics(sampler,walker_init,rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVelsamp, totMeanVel, n,thinfac,probs): 
     
     # print distance estimation statistics: 
     
@@ -265,11 +265,15 @@ def print_summary_statistics(rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVel
     
     print('\033[1m' + 'Distance estimation:' + '\033[0m')
     print('')
-    print('MCMC initialization [pc]:', rInit)
-    print('MCMC stepsize [pc]:',rStep)
-    print('MCMC number of burn-in samples:',Nburnin)
+    if sampler == 'metropolis':
+        print('Initialization [kpc]:', rInit)
+        print('Stepsize [kpc]:',rStep)
+    if sampler == 'emcee': 
+        print('Walker initialisation:',walker_init)
+        
+    print('Number of burn-in samples:',Nburnin)
     print('Thinning factor:', thinfac)
-    print('MCMC number of retained iterations:',Nsamp)
+    print('Number of retained iterations:',Nsamp)
     print('')
     print('Kinegeometric distance:')
     print('')

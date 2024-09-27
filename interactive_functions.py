@@ -4,7 +4,7 @@ from functions import *
 def single_sourceid(sampler ,seed, source_id, 
                     parallax, parallax_error, alpha, beta, rlen, 
                     mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
-                    walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n, rows_prior_summary,probs): 
+                    Nwalker, a, Nsamp, thinfac, Nburnin, n, rows_prior_summary,probs): 
     
     np.random.seed(seed)
     
@@ -77,11 +77,11 @@ def single_sourceid(sampler ,seed, source_id,
             beta = float(rows_prior_summary[healpix][7])
             rlen = float(rows_prior_summary[healpix][5])*1e-3
             
-            print_data_sourceid(source_id=source_id,healpix=healpix,w=w,sd_w=sd_w,
-                                wzp=wzp,parallax=parallax,mu_ra=mu_ra,mu_dec=mu_dec,sd_mu_ra=sd_mu_ra,
-                                sd_mu_dec=sd_mu_dec,corr_w_mu_ra=corr_w_mu_ra,corr_w_mu_dec=corr_w_mu_dec,corr_mu_ra_dec=corr_mu_ra_dec,
-                               alpha=alpha, beta=beta, rlen=rlen,
-                               )
+            rlen_EDSD = float(rows_prior_summary[healpix][10])  # in pc, since only reqired function for mode_post3, which takes pc
+            rInit = float(mode_post3(w=1e-3*parallax,wsd=1e-3*sd_w,rlen = rlen_EDSD,retall = False))*1e-3 # in kpc
+            rStep = 0.75*rInit*min(1/3, abs(sd_w/parallax))
+            
+            
             
             # load the velocity prior model (sfit) correspoding to the respective healpixel 
             
@@ -102,6 +102,7 @@ def single_sourceid(sampler ,seed, source_id,
             
             # Distance estimation
             
+            walker_init = np.random.uniform((1-a)*rInit, (1+a)*rInit, (Nwalker, 1))
             
             if sampler=='metropolis': 
                 
@@ -122,12 +123,10 @@ def single_sourceid(sampler ,seed, source_id,
                 rSamp_kinegeo = samp_kinegeo[:,1]
                 rSamp_kinegeo = rSamp_kinegeo[::thinfac]
                 
-                
             if sampler == 'emcee': 
                 
                 # geometric samples
                 
-                Nwalker = len(walker_init)
                 sampler_geo = emcee.EnsembleSampler(nwalkers=Nwalker, 
                                             ndim=1, 
                                             log_prob_fn=loggeopostdensity, 
@@ -166,8 +165,13 @@ def single_sourceid(sampler ,seed, source_id,
             totVelsamp = np.array(totVelsamp)
             totMeanVel = np.array(totMeanVel)
             
-            #plot results
+            #print data 
+            print_data_sourceid(source_id=source_id,healpix=healpix,w=w,sd_w=sd_w,
+                                wzp=wzp,parallax=parallax,mu_ra=mu_ra,mu_dec=mu_dec,sd_mu_ra=sd_mu_ra,
+                                sd_mu_dec=sd_mu_dec,corr_w_mu_ra=corr_w_mu_ra,corr_w_mu_dec=corr_w_mu_dec,corr_mu_ra_dec=corr_mu_ra_dec,
+                               alpha=alpha, beta=beta, rlen=rlen)
             
+            #plot results
             rplotlo = min(np.percentile(rSamp_kinegeo,5),np.percentile(rSamp_geo,5))
             rplothi = max(np.percentile(rSamp_kinegeo,95),np.percentile(rSamp_geo,95))
             
@@ -177,7 +181,9 @@ def single_sourceid(sampler ,seed, source_id,
             
             plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
             
-            print_summary_statistics(rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
+            #print summary statistics
+            print_summary_statistics(sampler=sampler, walker_init=walker_init,
+                                     rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                                      totVelsamp=totVelsamp, totMeanVel=totMeanVel,n=n,thinfac=thinfac,probs=probs)
             plt.show()
                 
@@ -185,7 +191,7 @@ def single_sourceid(sampler ,seed, source_id,
 def single_owndata(sampler,seed, source_id, 
                    parallax, parallax_error, alpha, beta, rlen, 
                    mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,         
-                   walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary, probs):       
+                   Nwalker,a ,rInit ,rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary, probs):       
     
     np.random.seed(seed)
     
@@ -221,6 +227,8 @@ def single_owndata(sampler,seed, source_id,
     # Extract sfit from tempEnv
     sfit = tempEnv['sfit']
     
+    walker_init = np.random.uniform((1-a)*rInit, (1+a)*rInit, (Nwalker, 1))
+    
     if sampler=='metropolis': 
         
         # geometric samples
@@ -244,7 +252,6 @@ def single_owndata(sampler,seed, source_id,
         
         # geometric samples
         
-        Nwalker = len(walker_init)
         sampler_geo = emcee.EnsembleSampler(nwalkers=Nwalker, 
                                     ndim=1, 
                                     log_prob_fn=loggeopostdensity, 
@@ -255,6 +262,7 @@ def single_owndata(sampler,seed, source_id,
         rSamp_geo = rSamp_geo[::thinfac]
         
         # kinegeometric samples
+        
         sampler_kinegeo = emcee.EnsembleSampler(nwalkers=Nwalker,
                                                 ndim=1,
                                                 log_prob_fn=logkinegeopostdensity,
@@ -291,13 +299,13 @@ def single_owndata(sampler,seed, source_id,
                  propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
     plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
     
-    print_summary_statistics(rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo, 
+    print_summary_statistics(sampler=sampler,walker_init=walker_init,rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo, 
                              totVelsamp=totVelsamp, totMeanVel=totMeanVel, n=n,thinfac=thinfac,probs=probs)
     
     plt.show()
     
 
-def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp, Nburnin,thinfac,n,seed,rows_prior_summary,Nmax,probs): 
+def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker, a ,Nburnin,thinfac,n,seed,rows_prior_summary,Nmax,probs): 
     
     #read in comparison data to obtain array containing source_ids 
     
@@ -455,13 +463,9 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp, Nburni
         
         if sampler == 'emcee': 
             
-            # 4 walkers; initialisatzion: random value between 0.5 and 1.5 * rInit
-            nwalkers = 4
-            walker_init = np.random.uniform(low=0.5*rInit, high=1.5*rInit, size=(nwalkers,1)) 
+            walker_init = np.random.uniform((1-a)*rInit, (1+a)*rInit, (Nwalker, 1))
             
             # geometric samples
-        
-            Nwalker = len(walker_init)
             sampler_geo = emcee.EnsembleSampler(nwalkers=Nwalker, 
                                         ndim=1, 
                                         log_prob_fn=loggeopostdensity, 
@@ -612,7 +616,7 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp, Nburni
 def interactive_velocity_function(data, sampler, seed, source_id,
                                   parallax, parallax_error, alpha, beta, rlen, 
                                   mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
-                                  walker_init, rInit, rStep, Nsamp, thinfac, Nburnin, n,
+                                  Nwalker,a, rInit, rStep, Nsamp, thinfac, Nburnin, n,
                                   filename_in, filename_out, create_pdf, rows_prior_summary, Nmax, probs):
     if Nsamp < 0: 
         
@@ -631,7 +635,9 @@ def interactive_velocity_function(data, sampler, seed, source_id,
         print("\033[91mError: Number of velocity samples drawn for each of the MCMC distance samples must nut be negative.\033[0m")
     
     else: 
-    
+        message= 'Processing...'
+        print(message, end='\r')
+        
         if data == 'single source, own data': 
             
             single_owndata(sampler=sampler,seed=seed, source_id=source_id,
@@ -639,7 +645,7 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                            mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
                            corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
                            healpix=healpix,
-                           walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
+                           Nwalker=Nwalker,a=a, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
                            rows_prior_summary=rows_prior_summary, probs=probs)
                                
             
@@ -650,13 +656,14 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                             mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
                             corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
                             healpix=healpix,
-                            walker_init=walker_init, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
+                            Nwalker=Nwalker,a=a, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
                             rows_prior_summary=rows_prior_summary, probs=probs)                           
                                                                
         if data =='multiple source_ids in .csv file':
             
             multiple_sorceid(filename_in=filename_in,filename_out=filename_out,create_pdf=create_pdf,
-                             sampler=sampler, Nsamp=Nsamp, Nburnin=Nburnin,
+                             Nwalker=Nwalker,a=a, sampler=sampler, Nsamp=Nsamp, Nburnin=Nburnin,
                              thinfac=thinfac, n=n,seed=seed,
                              rows_prior_summary=rows_prior_summary,Nmax=Nmax, probs=probs)
-                
+            
+        print(" " * len(message), end='\r')

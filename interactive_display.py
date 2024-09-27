@@ -30,7 +30,7 @@ source_id = widgets.Text(
     style = {'description_width': 'initial'}
 )
 
-description_text = widgets.Label(value='Gaia DR3 source_id (without ‘Gaia DR3’) or name to be resolved at Simbad. Mode "Single" must be selected to use this.')
+description_text = widgets.Label(value='Gaia DR3 source_id (without ‘Gaia DR3’) or name to be resolved at Simbad.')
 
 #field to insert name of file containing source_ids or (name, parallax, parallax_error, ra, dec)
 
@@ -68,7 +68,7 @@ rInit0 = widgets.FloatSlider(
     min=0,
     max=2,
     step=0.001,
-    description='starting value of Metropolis algorithm [kpc]:',
+    description='starting value [kpc]:',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -83,7 +83,6 @@ rInit0 = widgets.FloatSlider(
 rInit = widgets.FloatText(layout=widgets.Layout(width='25%'),flex='2')
 widgets.jslink((rInit0, 'value'), (rInit, 'value'))
 
-
 #stepsize slider
 
 rStep0 = widgets.FloatSlider(
@@ -91,7 +90,7 @@ rStep0 = widgets.FloatSlider(
     min=0,
     max=0.5,
     step=0.001,
-    description='stepsize of Metropolis algorithm [kpc]:',
+    description='stepsize (only used for Metropolis) [kpc]:',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -195,10 +194,55 @@ Nburnin0 = widgets.IntSlider(
 Nburnin = widgets.IntText(layout=widgets.Layout(width='25%'),flex='2')
 widgets.jslink((Nburnin0, 'value'), (Nburnin, 'value'))
 
+#Nwalker slider
+
+Nwalker0 = widgets.IntSlider(
+    value = 5,
+    min=0,
+    max=20,
+    step=1,
+    description='Number of walkers:',
+    disabled = False,
+    continuous_update=False,
+    orientation='horizontal',
+    readout=False,
+    readout_format='.2f',
+    style = {'description_width': 'initial'},
+    layout=widgets.Layout(flex='8')
+)
+
+#textfield connected to Nwalker slider
+
+Nwalker = widgets.IntText(layout=widgets.Layout(width='25%'),flex='2')
+widgets.jslink((Nwalker0, 'value'), (Nwalker, 'value'))
+
+#a slider
+
+a0 = widgets.FloatSlider(
+    value = 0.01,
+    min=0,
+    max=1,
+    step=0.005,
+    description='a:',
+    disabled = False,
+    continuous_update=False,
+    orientation='horizontal',
+    readout=False,
+    readout_format='.2f',
+    style = {'description_width': 'initial'},
+    layout=widgets.Layout(flex='8')
+)
+
+#textfield connected to parallax slider
+
+a = widgets.FloatText(layout=widgets.Layout(width='25%'),flex='2')
+widgets.jslink((a0, 'value'), (a, 'value'))
+
+
 #parallax slider
 
 parallax0 = widgets.FloatSlider(
-    value = 2.8,
+    value = 1,
     min=-0.5,
     max=3,
     step=0.01,
@@ -220,7 +264,7 @@ widgets.jslink((parallax0, 'value'), (parallax, 'value'))
 #parallax_error slider
 
 parallax_error0 = widgets.FloatSlider(
-    value = 0.4,
+    value = 0.5,
     min=0.001,
     max=3,
     step=0.001,
@@ -242,10 +286,10 @@ widgets.jslink((parallax_error0, 'value'), (parallax_error, 'value'))
 #rlen slider
 
 rlen0 = widgets.FloatSlider(
-    value=3.41901757752753e-06,
+    value= 5,
     min=0,
-    max=1.000,
-    step=0.0001,
+    max=10,
+    step=0.001,
     description='Length scale [kpc]:',
     disabled=False,
     continuous_update=False,
@@ -264,7 +308,7 @@ widgets.jslink((rlen0, 'value'), (rlen, 'value'))
 # alpha-slider
 
 alpha0 = widgets.FloatSlider(
-    value=0.2,
+    value=1,
     min=0,
     max=3,
     step=0.01,
@@ -286,7 +330,7 @@ widgets.jslink((alpha0, 'value'), (alpha, 'value'))
 #beta-slider
 
 beta0 = widgets.FloatSlider(
-    value=7.5,
+    value=2,
     min=0,
     max=3.00,
     step=0.01,
@@ -308,11 +352,11 @@ widgets.jslink((beta0, 'value'), (beta, 'value'))
 #mu_ra
 
 mu_ra0 = widgets.FloatSlider(
-    value=-6.2,
+    value=0,
     min=-60,
     max=60,
     step=0.1,
-    description='propm ra [km/s]: ',
+    description='propm ra [mas/yr]: ',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -330,11 +374,11 @@ widgets.jslink((mu_ra0, 'value'), (mu_ra, 'value'))
 #mu_dec
 
 mu_dec0 = widgets.FloatSlider(
-    value=-16.7,
+    value=0,
     min=-60,
     max=60,
     step=0.1,
-    description='propm dec [km/s]: ',
+    description='propm dec [mas/yr]: ',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -352,11 +396,11 @@ widgets.jslink((mu_dec0, 'value'), (mu_dec, 'value'))
 #sd_mu_ra
 
 sd_mu_ra0 = widgets.FloatSlider(
-    value=0.87,
+    value=1,
     min=-60,
     max=60,
     step=0.1,
-    description='propm ra error[km/s]: ',
+    description='propm ra error[mas/yr]: ',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -375,11 +419,11 @@ widgets.jslink((sd_mu_ra0, 'value'), (sd_mu_ra, 'value'))
 #sd_mu_dec
 
 sd_mu_dec0 = widgets.FloatSlider(
-    value=0.55,
+    value=1,
     min=-60,
     max=60,
     step=0.1,
-    description='propm dec error[km/s]: ',
+    description='propm dec error[mas/yr]: ',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -396,7 +440,7 @@ widgets.jslink((sd_mu_dec0, 'value'), (sd_mu_dec, 'value'))
 #corr_w_mu_ra
 
 corr_w_mu_ra0 = widgets.FloatSlider(
-    value=0.25,
+    value=0,
     min=-1,
     max=1,
     step=0.1,
@@ -414,7 +458,7 @@ widgets.jslink((corr_w_mu_ra0, 'value'), (corr_w_mu_ra, 'value'))
 
 #corr_w_mu_dec
 corr_w_mu_dec0 = widgets.FloatSlider(
-    value=0.14,
+    value=0,
     min=-1,
     max=1,
     step=0.1,
@@ -433,7 +477,7 @@ widgets.jslink((corr_w_mu_dec0, 'value'), (corr_w_mu_dec, 'value'))
 #corr_mu_ra_dec
 
 corr_mu_ra_dec0 = widgets.FloatSlider(
-    value=-0.37,
+    value=0,
     min=-1,
     max=1,
     step=0.1,
@@ -452,7 +496,7 @@ widgets.jslink((corr_mu_ra_dec0, 'value'), (corr_mu_ra_dec, 'value'))
 #healpix
 
 healpix0 = widgets.IntSlider(
-    value=50,
+    value=6200,
     min=0,
     max=12288,
     step=1,
@@ -470,15 +514,17 @@ widgets.jslink((healpix0, 'value'), (healpix, 'value'))
 
 healpix_description=widgets.Label(value='only used for velocity prior; not for geometric distance prior')
 
-# walker initialisation
 
-walker_init = widgets.Text(
-    value='0.31, 0.35, 0.36, 0.37',
-    description='walker initialisation [kpc]',
-    disabled=False,
-    style = {'description_width': 'initial'},
-    layout=widgets.Layout(flex='8')
-)
+
+## walker initialisation
+#
+#walker_init = widgets.Text(
+#    value='0.31, 0.35, 0.36, 0.37',
+#    description='walker initialisation [kpc]',
+#    disabled=False,
+#    style = {'description_width': 'initial'},
+#    layout=widgets.Layout(flex='8')
+#)
 
 ## plotting range:
 #
@@ -506,12 +552,14 @@ create_pdf = widgets.Checkbox(
     layout=widgets.Layout(flex='8')
 )
 
+
 # display all widgets
 
 display(sampler)
 display(data)
 
 display(widgets.HBox([source_id, description_text]))
+display(Markdown('(Mode "single source, source_id" must be selected to use this.)'))
 display(filename_in)
 display(filename_out)
 display(create_pdf)
@@ -524,22 +572,28 @@ hbox_layout = widgets.Layout(display='flex', flex_flow='row', justify_content='s
 display(widgets.HBox([Nsamp0,Nsamp],layout=hbox_layout))
 display(widgets.HBox([Nburnin0,Nburnin],layout=hbox_layout))
 display(widgets.HBox([thinfac0,thinfac],layout=hbox_layout))
-display(widgets.HBox([n0,n],layout=hbox_layout))
-display(Markdown("(set to 1 if unsure what this is)"))
-
+display(widgets.HBox([n0,n,widgets.Label(value="(set to 1 if unsure what this is)")],layout=hbox_layout))
+#display(Markdown("(set to 1 if unsure what this is)"))
 display(Markdown(" "))
-display(Markdown("**Sampling settings only required for metropolis when processing a single source:**"))
-display(Markdown("(when processing multiple sources, the initialisation will be 1/abs(parallax) and the stepsize will be 0.75* initialisation* min(1/3,abs(parallax_error/parallax)))"))
+display(Markdown("**Sampling settings only required for emcee:** "))
+display(widgets.HBox([Nwalker0,Nwalker],layout=hbox_layout))
+display(Markdown ('Initialisation for walkers: random values between (1-a)*starting value to (1+a)*starting value:'))
+display(widgets.HBox([a0,a],layout=hbox_layout))
+display(Markdown(" "))
+display(Markdown("**Sampling settings only reqired when using own data for a single source:**"))
 display(widgets.HBox([rInit0,rInit],layout=hbox_layout))
+display(Markdown ('(Initialisation when using source_ids: mode of EDSD prior)'))
 display(widgets.HBox([rStep0,rStep],layout=hbox_layout))
-display(Markdown(" "))
-display(Markdown("**Sampling settings only required for emcee when processing a single source:** "))
-display(Markdown("(when processing multiple sources: 4 walkers; initialisatzion: random value between 0.5 and 1.5 * 1/abs(parallax))"))
-display(walker_init)
+#display(Markdown("**Sampling settings only required for metropolis when processing a single source:**"))
+#display(Markdown("(when processing multiple sources, the initialisation will be 1/abs(parallax) and the stepsize will be 0.75* initialisation* min(1/3,abs(parallax_error/parallax)))"))
+
+#display(Markdown(" "))
+#display(Markdown("**Sampling settings only required for emcee when processing a single source:** "))
+
 # display input data 
 display(Markdown(" "))
 display(Markdown("**Input data when using own input data for a single source:**"))
-
+display(Markdown("(Default alpha and beta values are for EDSD prior)"))
 display(widgets.HBox([parallax0,parallax],layout=hbox_layout))
 display(widgets.HBox([parallax_error0,parallax_error],layout=hbox_layout))
 display(widgets.HBox([rlen0,rlen],layout=hbox_layout))
@@ -578,7 +632,7 @@ def submit(button):
                                       corr_w_mu_ra= corr_w_mu_ra.value, corr_w_mu_dec=corr_w_mu_dec.value,
                                       corr_mu_ra_dec=corr_mu_ra_dec.value, 
                                       healpix=int(healpix.value),
-                                      walker_init=np.array([float(x) for x in walker_init.value.split(', ')]).reshape(-1, 1) , 
+                                      Nwalker=Nwalker.value, a=a.value, 
                                       rInit=rInit.value, rStep=rStep.value, Nsamp=Nsamp.value, 
                                       thinfac=thinfac.value, Nburnin=Nburnin.value, n=n.value, 
                                       filename_in = filename_in.value,filename_out = filename_out.value, create_pdf = create_pdf.value,
