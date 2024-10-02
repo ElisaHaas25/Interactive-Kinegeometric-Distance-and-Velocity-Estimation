@@ -39,6 +39,7 @@ filename_in = widgets.Text(
     description='Input .csv-file',
     disabled=False
 )
+filename_in_description = widgets.Label(value="without '.csv'; file has to be in 'data' folder")
 
 #field to name the output file
 
@@ -264,7 +265,7 @@ widgets.jslink((parallax0, 'value'), (parallax, 'value'))
 #parallax_error slider
 
 parallax_error0 = widgets.FloatSlider(
-    value = 0.5,
+    value = 0.2,
     min=0.001,
     max=3,
     step=0.001,
@@ -286,7 +287,7 @@ widgets.jslink((parallax_error0, 'value'), (parallax_error, 'value'))
 #rlen slider
 
 rlen0 = widgets.FloatSlider(
-    value= 5,
+    value= 2,
     min=0,
     max=10,
     step=0.001,
@@ -352,7 +353,7 @@ widgets.jslink((beta0, 'value'), (beta, 'value'))
 #mu_ra
 
 mu_ra0 = widgets.FloatSlider(
-    value=0,
+    value=5,
     min=-60,
     max=60,
     step=0.1,
@@ -374,7 +375,7 @@ widgets.jslink((mu_ra0, 'value'), (mu_ra, 'value'))
 #mu_dec
 
 mu_dec0 = widgets.FloatSlider(
-    value=0,
+    value=5,
     min=-60,
     max=60,
     step=0.1,
@@ -500,7 +501,7 @@ healpix0 = widgets.IntSlider(
     min=0,
     max=12288,
     step=1,
-    description='healpix: ',
+    description='healpixel level 5: ',
     disabled = False,
     continuous_update=False,
     orientation='horizontal',
@@ -560,7 +561,7 @@ display(data)
 
 display(widgets.HBox([source_id, description_text]))
 display(Markdown('(Mode "single source, source_id" must be selected to use this.)'))
-display(filename_in)
+display(widgets.HBox([filename_in,filename_in_description]))
 display(filename_out)
 display(create_pdf)
 display(seed)
@@ -636,7 +637,8 @@ def submit(button):
                                       Nwalker=Nwalker.value, a=a.value, 
                                       rInit=rInit.value, rStep=rStep.value, Nsamp=Nsamp.value, 
                                       thinfac=thinfac.value, Nburnin=Nburnin.value, n=n.value, 
-                                      filename_in = filename_in.value,filename_out = filename_out.value, create_pdf = create_pdf.value,
+                                      filename_in = filename_in.value,filename_out = filename_out.value, 
+                                      create_pdf = create_pdf.value,
                                       rows_prior_summary=rows_prior_summary, Nmax=Nmax, probs = probs)
         
 # tie submit button to a function

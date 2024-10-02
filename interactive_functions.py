@@ -4,7 +4,7 @@ from functions import *
 def single_sourceid(sampler ,seed, source_id, 
                     parallax, parallax_error, alpha, beta, rlen, 
                     mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,
-                    Nwalker, a, Nsamp, thinfac, Nburnin, n, rows_prior_summary,probs): 
+                    Nwalker, a, Nsamp, thinfac, Nburnin, n, rows_prior_summary,probs,filename_out, create_pdf): 
     
     np.random.seed(seed)
     
@@ -175,23 +175,40 @@ def single_sourceid(sampler ,seed, source_id,
             rplotlo = min(np.percentile(rSamp_kinegeo,5),np.percentile(rSamp_geo,5))
             rplothi = max(np.percentile(rSamp_kinegeo,95),np.percentile(rSamp_geo,95))
             
-            plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
+            fig_dist = plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                          rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
                          propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
             
-            plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
+            fig_vel = plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
             
             #print summary statistics
+            
             print_summary_statistics(sampler=sampler, walker_init=walker_init,
                                      rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
-                                     totVelsamp=totVelsamp, totMeanVel=totMeanVel,n=n,thinfac=thinfac,probs=probs)
+                                     totVelsamp=totVelsamp, totMeanVel=totMeanVel,n=n,thinfac=thinfac,probs=probs,
+                                     filename_out=filename_out)
             plt.show()
-                
+            
+            # save all samples to a csv file
+            np.savetxt(f'./results/{filename_out}_velocitySamples.csv',totVelsamp, header=f'Ra [km/s],Dec [km/s]', delimiter=',')
+            np.savetxt(f'./results/{filename_out}_distanceSamplesKinegeo.csv',rSamp_kinegeo, 
+                       header=f'kinegeometric distance samples [kpc]', delimiter=',')
+            np.savetxt(f'./results/{filename_out}_distanceSamplesGeo.csv',rSamp_geo, 
+                       header=f'geometric distance samples [kpc]', delimiter=',')
+            
+            # save all plots to a .pdf file:
+    
+            if create_pdf == True:
+            
+                with PdfPages(f'./results/{filename_out}.pdf') as pdf:
+                    
+                    pdf.savefig(fig_dist)
+                    pdf.savefig(fig_vel)
                 
 def single_owndata(sampler,seed, source_id, 
                    parallax, parallax_error, alpha, beta, rlen, 
                    mu_ra, mu_dec, sd_mu_ra, sd_mu_dec, corr_w_mu_ra, corr_w_mu_dec, corr_mu_ra_dec, healpix,         
-                   Nwalker,a ,rInit ,rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary, probs):       
+                   Nwalker,a ,rInit ,rStep, Nsamp, thinfac, Nburnin, n,rows_prior_summary, probs, filename_out, create_pdf):       
     
     np.random.seed(seed)
     
@@ -294,16 +311,34 @@ def single_owndata(sampler,seed, source_id,
     rplotlo = min(np.percentile(rSamp_kinegeo,5),np.percentile(rSamp_geo,5))
     rplothi = max(np.percentile(rSamp_kinegeo,95),np.percentile(rSamp_geo,95))
     
-    plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
+    fig_dist = plot_results(rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo,
                  rplotlo=rplotlo,rplothi=rplothi,parallax=parallax, parallaxVar=parallaxVar, 
                  propm=propm, Cov3=Cov3, Cov2=Cov2, sfit=sfit,alpha=alpha,beta=beta,rlen=rlen, kfac=kfac,probs=probs) 
-    plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
+    fig_vel = plot_results_velocity(totVelsamp=totVelsamp,probs=probs)
     
-    print_summary_statistics(sampler=sampler,walker_init=walker_init,rInit=rInit,rStep=rStep,Nburnin=Nburnin,rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo, 
-                             totVelsamp=totVelsamp, totMeanVel=totMeanVel, n=n,thinfac=thinfac,probs=probs)
+    print_summary_statistics(sampler=sampler,walker_init=walker_init,rInit=rInit,rStep=rStep,Nburnin=Nburnin,
+                             rSamp_kinegeo=rSamp_kinegeo,rSamp_geo=rSamp_geo, 
+                             totVelsamp=totVelsamp, totMeanVel=totMeanVel, n=n,thinfac=thinfac,probs=probs,
+                             filename_out=filename_out)
     
     plt.show()
     
+    # save all samples to a csv file
+    np.savetxt(f'./results/{filename_out}_velocitySamples.csv',totVelsamp, header=f'Ra [km/s],Dec [km/s]', delimiter=',')
+    np.savetxt(f'./results/{filename_out}_distanceSamplesKinegeo.csv',rSamp_kinegeo, 
+                       header=f'kinegeometric distance samples [kpc]', delimiter=',')
+    np.savetxt(f'./results/{filename_out}_distanceSamplesGeo.csv',rSamp_geo, 
+                       header=f'geometric distance samples [kpc]', delimiter=',')
+    
+    # save all plots to a .pdf file:
+    
+    if create_pdf == True:
+    
+        with PdfPages(f'./results/{filename_out}.pdf') as pdf:
+            
+            pdf.savefig(fig_dist)
+            pdf.savefig(fig_vel)
+            
 
 def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker, a ,Nburnin,thinfac,n,seed,rows_prior_summary,Nmax,probs): 
     
@@ -474,6 +509,7 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker
             samp_geo = sampler_geo.get_chain(flat=True, discard = Nburnin) 
             rSamp_geo = samp_geo.flatten()
             rSamp_geo = rSamp_geo[::thinfac]
+            rSamples_kinegeo.append(rSamp_geo)
             
             # kinegeometric samples
             sampler_kinegeo = emcee.EnsembleSampler(nwalkers=Nwalker,
@@ -485,7 +521,7 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker
             samp_kinegeo = sampler_kinegeo.get_chain(flat=True,discard = Nburnin) 
             rSamp_kinegeo = samp_kinegeo.flatten()
             rSamp_kinegeo = rSamp_kinegeo[::thinfac]
-            
+            rSamples_geo.append(rSamp_kinegeo)
             
         #compute distance statistics:
                  
@@ -556,10 +592,10 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker
     
         robjects.r['closeAllConnections']()
             
-        # save to csv file; all samples for one source_id are in one row, same order as input 
-        
-        np.savetxt(f'./results/{filename_out}_samples_kinegeo.csv', rSamples_kinegeo, delimiter=",")
-        np.savetxt(f'./results/{filename_out}_samples_geo.csv', rSamples_geo, delimiter=",")
+        ## save to csv file; all samples for one source_id are in one row, same order as input 
+        #
+        #np.savetxt(f'./results/{filename_out}_distanceSamplesKinegeo.csv', rSamples_kinegeo, delimiter=",")
+        #np.savetxt(f'./results/{filename_out}_distanceSamplesGeo.csv', rSamples_geo, delimiter=",")
         
         # create plots to save in pdf file and append to the lists of plots for each source: 
         
@@ -592,7 +628,7 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker
              'vDecMedKinogeo', 'vDecLoKinogeo', 'vDecHiKinogeo',\
              'rvraCorrKinogeo', 'rvdecCorrKinogeo', 'vravdecCorrKinogeo']
     
-    with open(f'./results/{filename_out}_summary_statistics.csv', 'w', encoding='UTF8') as f:
+    with open(f'./results/{filename_out}_summaryStatistics.csv', 'w', encoding='UTF8') as f:
         writer = csv.writer(f)
         writer.writerow(header)
         for i in range(len(source_ids[:])): 
@@ -602,6 +638,31 @@ def multiple_sorceid(filename_in,filename_out,create_pdf, sampler, Nsamp,Nwalker
                              raVel_all[i][0],raVel_all[i][1],raVel_all[i][2],\
                              decVel_all[i][0],decVel_all[i][1],decVel_all[i][2],\
                              Cov_rv_ra_all[i],Cov_rv_dec_all[i],corrVel_all[i][0,1]])  
+    
+    # save all velocity samples to a csv file
+    
+    with open(f'./results/{filename_out}_velocitySamples.csv', 'w', encoding='UTF8') as f2:
+        writer2 = csv.writer(f2)
+        writer2.writerow(['source_id','Ra/Dec', 'Samples' ])
+        for i in range(len(source_ids[:])):
+            writer2.writerow([source_ids[i], 'Ra', np.array(totVelsamp_all)[i][:,0]])
+            writer2.writerow([source_ids[i], 'Dec', np.array(totVelsamp_all)[i][:,1]])
+            
+   # save all kinegeo distances to a csv file        
+
+    with open(f'./results/{filename_out}_distanceSamplesKinegeo.csv', 'w', encoding='UTF8') as f3:
+        writer3 = csv.writer(f3)
+        writer3.writerow(['source_id','Samples'])
+        for i in range(len(source_ids[:])):
+            writer3.writerow([source_ids[i], rSamples_kinegeo[i]])
+            
+   # save all geo distances to a csv file        
+
+    with open(f'./results/{filename_out}_distanceSamplesGeo.csv', 'w', encoding='UTF8') as f4:
+        writer4 = csv.writer(f4)
+        writer4.writerow(['source_id','Samples'])
+        for i in range(len(source_ids[:])):
+            writer4.writerow([source_ids[i], rSamples_geo[i]]) 
             
     # save all plots to a .pdf file:
     
@@ -646,7 +707,7 @@ def interactive_velocity_function(data, sampler, seed, source_id,
                            corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
                            healpix=healpix,
                            Nwalker=Nwalker,a=a, rInit=rInit, rStep=rStep, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
-                           rows_prior_summary=rows_prior_summary, probs=probs)
+                           rows_prior_summary=rows_prior_summary, probs=probs, filename_out=filename_out, create_pdf=create_pdf)
                                
             
         if data == 'single source, source_id': 
@@ -654,10 +715,10 @@ def interactive_velocity_function(data, sampler, seed, source_id,
             single_sourceid(sampler=sampler,seed=seed, source_id=source_id,
                             parallax=parallax, parallax_error=parallax_error, alpha=alpha, beta=beta, rlen=rlen,
                             mu_ra=mu_ra, mu_dec=mu_dec, sd_mu_ra=sd_mu_ra, sd_mu_dec=sd_mu_dec,                             
-                            corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,                         
+                            corr_w_mu_ra=corr_w_mu_ra, corr_w_mu_dec=corr_w_mu_dec, corr_mu_ra_dec=corr_mu_ra_dec,
                             healpix=healpix,
                             Nwalker=Nwalker,a=a, Nsamp=Nsamp, thinfac=thinfac, Nburnin=Nburnin,n=n,
-                            rows_prior_summary=rows_prior_summary, probs=probs)                           
+                            rows_prior_summary=rows_prior_summary, probs=probs, filename_out=filename_out,create_pdf=create_pdf)                           
                                                                
         if data =='multiple source_ids in .csv file':
             

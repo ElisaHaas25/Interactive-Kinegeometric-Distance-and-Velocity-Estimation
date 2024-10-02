@@ -247,7 +247,7 @@ def plot_results_velocity(totVelsamp, probs):
 
 # function to print the summary statistics for kinegeometric and geometric samples    
     
-def print_summary_statistics(sampler,walker_init,rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVelsamp, totMeanVel, n,thinfac,probs): 
+def print_summary_statistics(sampler,walker_init,rInit,rStep,Nburnin,rSamp_kinegeo,rSamp_geo, totVelsamp, totMeanVel, n,thinfac,probs, filename_out): 
     
     # print distance estimation statistics: 
     
@@ -325,6 +325,24 @@ def print_summary_statistics(sampler,walker_init,rInit,rStep,Nburnin,rSamp_kineg
     print('Cov_rv_ra [kpc km/s]: ',Cov_rv_ra )
     print('Cov_rv_dec [kpc km/s]: ',Cov_rv_dec )
 
+    
+    # save all summary statistics to a csv file
+
+    header = ['rMedGeo', 'rLoGeo', 'rHiGeo',\
+              'rMedKinogeo', 'rLoKinogeo', 'rHiKinogeo',\
+             'vRaMedKinogeo', 'vRaLoKinogeo', 'vRaHiKinogeo',\
+             'vDecMedKinogeo', 'vDecLoKinogeo', 'vDecHiKinogeo',\
+             'rvraCorrKinogeo', 'rvdecCorrKinogeo', 'vravdecCorrKinogeo']
+    
+    with open(f'./results/{filename_out}_summaryStatistics.csv', 'w', encoding='UTF8') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerow([rest_geo, rlo_geo, rhi_geo,\
+                         rest_kinegeo, rlo_kinegeo, rhi_kinegeo,\
+                         raVel[0],raVel[1],raVel[2],\
+                         decVel[0],decVel[1],decVel[2],\
+                         Cov_rv_ra,Cov_rv_dec,corrVel[1,0]])
+                
 # function to print the data for a single source_id as input    
     
 def print_data_sourceid(source_id,healpix,w,sd_w,wzp,parallax,mu_ra,mu_dec,sd_mu_ra,sd_mu_dec,corr_w_mu_ra,corr_w_mu_dec,corr_mu_ra_dec,alpha,beta,rlen):
